@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Diagnosa Kerusakan Printer</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        background: #f6f7fb;
+      }
+      .card {
+        border: 0;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+      }
+      .symptom-item {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .symptom-item:hover {
+        border-color: #cfe2ff;
+      }
+      .badge-rule {
+        font-weight: 600;
+      }
+      .small-muted {
+        font-size: 0.92rem;
+        color: #6c757d;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+      <div class="container">
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="#"
+          >Diagnosa Printer
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#mainNavbar"
+          aria-controls="mainNavbar"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNavbar">
+          <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link" aria-current="page" href="index.html"
+                >Beranda</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="diagnosa.html">Diagnosa</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="diagram.html">Diagram Tree</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#bantuan">Bantuan</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#kontak">Kontak</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container py-4">
+      <div class="row g-4">
+        <div class="col-lg-7">
+          <div class="card rounded-4">
+            <div class="card-body p-4">
+              <h5 class="fw-bold mb-1">Pilih gejala yang terjadi</h5>
+              <div class="small-muted mb-3">
+                Centang sesuai kondisi printer kamu, lalu klik <b>Diagnosa</b>.
+              </div>
+
+              <div class="row g-2" id="symptomList"></div>
+
+              <div class="d-flex gap-2 mt-4">
+                <button class="btn btn-primary px-4" id="btnDiagnose">
+                  Diagnosa
+                </button>
+                <button class="btn btn-outline-secondary" id="btnReset">
+                  Reset
+                </button>
+              </div>
+
+              <div class="alert alert-info mt-3 mb-0">
+                <b>Tips:</b> Kalau hasil “Tidak terdeteksi”, artinya kombinasi
+                gejala belum memenuhi Kaidah 1–16.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card rounded-4">
+            <div class="card-body p-4">
+              <h5 class="fw-bold mb-3">Hasil Diagnosa</h5>
+
+              <div id="resultEmpty" class="text-muted">
+                Belum ada hasil. Silakan pilih gejala lalu klik <b>Diagnosa</b>.
+              </div>
+
+              <div id="resultBox" class="d-none">
+                <div class="mb-2">
+                  <span class="badge text-bg-success">Terdeteksi</span>
+                </div>
+                <h6 class="fw-bold mb-2" id="resultTitle"></h6>
+                <div class="small-muted mb-3" id="resultRule"></div>
+
+                <div class="border rounded-3 p-3 bg-light">
+                  <div class="fw-semibold mb-2">Gejala yang cocok</div>
+                  <ul class="mb-0" id="matchedSymptoms"></ul>
+                </div>
+
+                
+              </div>
+
+              <div id="resultUnknown" class="d-none">
+                <div class="mb-2">
+                  <span class="badge text-bg-warning">Tidak terdeteksi</span>
+                </div>
+                <h6 class="fw-bold mb-2">Kerusakan belum dapat ditentukan</h6>
+                <div class="small-muted">
+                  Kombinasi gejala belum memenuhi Kaidah 1–16. Coba centang
+                  gejala yang lebih spesifik (indikator berkedip, peringatan
+                  monitor, hasil cetak).
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      /**
+       * GEJALA (diambil dari kalimat Kaidah 1–16)
+       * Kita pakai kode internal "Sxx" agar gampang dipakai di rule.
+       */
+      const SYMPTOMS = [
+        { id: "S01", label: "Printer tidak dapat dihidupkan" },
+        { id: "S02", label: "Tombol power tidak berfungsi" },
+
+        {
+          id: "S03",
+          label: "Lampu indikator kuning/orange berkedip 2x diselingi hijau",
+        },
+        { id: "S04", label: "Kartrij tidak bergeser ke kanan saat dihidupkan" },
+
+        {
+          id: "S05",
+          label: "Lampu indikator kuning/orange berkedip 2x (tanpa hijau)",
+        },
+        { id: "S06", label: "Tidak ada kertas yang keluar" },
+
+        { id: "S07", label: "Lampu indikator kuning/orange berkedip 3x" },
+        { id: "S08", label: "Kertas tidak dapat keluar" },
+        { id: "S09", label: "Mekanik motor printer berhenti/ tidak berputar" },
+
+        {
+          id: "S10",
+          label: "Lampu indikator kuning/orange berkedip 3x disertai hijau",
+        },
+        { id: "S11", label: "Printer macet" },
+
+        { id: "S12", label: "Lampu indikator kuning/orange berkedip 4x" },
+        { id: "S13", label: "Printer tidak dapat mencetak" },
+        { id: "S14", label: "Muncul peringatan di monitor" },
+
+        { id: "S15", label: "Hasil cetakan buram / tidak ada" },
+
+        { id: "S16", label: "Lampu indikator kuning/orange berkedip 7x" },
+
+        {
+          id: "S17",
+          label: "Lampu indikator kuning/orange berkedip 5x disertai hijau",
+        },
+
+        {
+          id: "S18",
+          label: "Lampu indikator kuning/orange berkedip 8x tanpa hijau",
+        },
+        { id: "S19", label: "Hasil cetakan buram" },
+
+        {
+          id: "S20",
+          label: "Lampu indikator kuning/orange berkedip 8x disertai hijau",
+        },
+        { id: "S21", label: "Tinta meluber pada hasil cetakan" },
+
+        {
+          id: "S22",
+          label: "Lampu indikator kuning/orange berkedip 7x disertai hijau",
+        },
+        { id: "S23", label: "Cetakan warna tidak ada" },
+
+        {
+          id: "S24",
+          label: "Lampu indikator kuning/orange berkedip 14/15x tanpa hijau",
+        },
+
+        { id: "S25", label: "Printer tidak terdeteksi pada komputer" },
+
+        {
+          id: "S26",
+          label: "Hasil cetakan tidak sesuai (buram/putus/tidak ada)",
+        },
+        {
+          id: "S27",
+          label: "Tinta masih mencukupi untuk melakukan percetakan",
+        },
+      ];
+
+      /**
+       * RULES (Kaidah 1–16) — Forward Chaining (IF symptoms THEN diagnosis)
+       * Disusun sesuai isi kaidah pada jurnal.
+       */
+      const RULES = [
+        // Kaidah 1
+        {
+          code: "Kaidah 1",
+          diagnosis: "Printer mati total",
+          ifAll: ["S01", "S02"],
+        },
+
+        // Kaidah 2 (ikuti THEN pada jurnal)
+        {
+          code: "Kaidah 2",
+          diagnosis: "Paper out (tidak ada kertas)",
+          ifAll: ["S03", "S04"],
+        },
+
+        // Kaidah 3 (ikuti THEN pada jurnal)
+        {
+          code: "Kaidah 3",
+          diagnosis:
+            "Kartrij error (kerusakan pada dudukan printhead cartridge)",
+          ifAll: ["S05", "S06"],
+        },
+
+        // Kaidah 4
+        {
+          code: "Kaidah 4",
+          diagnosis: "Paper jam (kertas macet)",
+          ifAll: ["S07", "S08", "S09"],
+        },
+
+        // Kaidah 5
+        {
+          code: "Kaidah 5",
+          diagnosis: "Terjadi error pada bagian mekanik motor printer",
+          ifAll: ["S10", "S09", "S08", "S11"],
+        },
+
+        // Kaidah 6
+        {
+          code: "Kaidah 6",
+          diagnosis:
+            "Ink tank not installed (tangki tinta/cartridge tidak terpasang)",
+          ifAll: ["S12", "S13", "S14"],
+        },
+
+        // Kaidah 7
+        {
+          code: "Kaidah 7",
+          diagnosis: "Ink absorber full / waste ink pad full",
+          ifAll: ["S12", "S14", "S15"],
+        },
+
+        // Kaidah 8
+        {
+          code: "Kaidah 8",
+          diagnosis: "Printhead cartridge terpasang tidak benar",
+          ifAll: ["S16", "S14", "S13"],
+        },
+
+        // Kaidah 9
+        {
+          code: "Kaidah 9",
+          diagnosis: "Cartridge warna/hitam rusak",
+          ifAll: ["S17", "S15", "S14"],
+        },
+
+        // Kaidah 10
+        {
+          code: "Kaidah 10",
+          diagnosis:
+            "Waste ink full warning (peringatan sebelum error nilai waste counter > 100%)",
+          ifAll: ["S18", "S19", "S14"],
+        },
+
+        // Kaidah 11
+        {
+          code: "Kaidah 11",
+          diagnosis: "Error karena ink tank full",
+          ifAll: ["S20", "S21", "S14"],
+        },
+
+        // Kaidah 12
+        {
+          code: "Kaidah 12",
+          diagnosis: "Cartridge warna rusak",
+          ifAll: ["S22", "S23", "S14"],
+        },
+
+        // Kaidah 13
+        {
+          code: "Kaidah 13",
+          diagnosis: "Cartridge hitam error",
+          ifAll: ["S24", "S13", "S14"],
+        },
+
+        // Kaidah 14
+        {
+          code: "Kaidah 14",
+          diagnosis: "Driver tidak terinstall dengan benar",
+          ifAll: ["S25", "S14"],
+        },
+
+        // Kaidah 15
+        {
+          code: "Kaidah 15",
+          diagnosis:
+            "Tinta kosong / tidak mencukupi untuk melakukan percetakan",
+          ifAll: ["S26", "S14"],
+        },
+
+        // Kaidah 16
+        {
+          code: "Kaidah 16",
+          diagnosis: "Terjadi penyumbatan pada cartridge (tinta beku)",
+          ifAll: ["S26", "S27"],
+        },
+      ];
+
+      /** Render checklist */
+      const symptomListEl = document.getElementById("symptomList");
+      SYMPTOMS.forEach((s) => {
+        const col = document.createElement("div");
+        col.className = "col-12";
+        col.innerHTML = `
+    <label class="symptom-item d-flex align-items-start gap-2">
+      <input class="form-check-input mt-1" type="checkbox" value="${s.id}" id="${s.id}">
+      <span>${s.label}</span>
+    </label>
+  `;
+        symptomListEl.appendChild(col);
+      });
+
+      function getSelectedSymptoms() {
+        const selected = new Set();
+        SYMPTOMS.forEach((s) => {
+          const cb = document.getElementById(s.id);
+          if (cb.checked) selected.add(s.id);
+        });
+        return selected;
+      }
+
+      function findMatches(selectedSet) {
+        const matches = [];
+        for (const rule of RULES) {
+          const ok = rule.ifAll.every((id) => selectedSet.has(id));
+          if (ok) matches.push(rule);
+        }
+        // kalau banyak yang match, pilih yang paling spesifik (gejala terbanyak)
+        matches.sort((a, b) => b.ifAll.length - a.ifAll.length);
+        return matches;
+      }
+
+      function showDetected(rule) {
+        document.getElementById("resultEmpty").classList.add("d-none");
+        document.getElementById("resultUnknown").classList.add("d-none");
+        document.getElementById("resultBox").classList.remove("d-none");
+
+        document.getElementById("resultTitle").textContent = rule.diagnosis;
+        document.getElementById(
+          "resultRule"
+        ).innerHTML = `Rule terpenuhi: <span class="badge text-bg-primary badge-rule">${rule.code}</span>`;
+
+        const ul = document.getElementById("matchedSymptoms");
+        ul.innerHTML = "";
+        rule.ifAll.forEach((id) => {
+          const sym = SYMPTOMS.find((s) => s.id === id);
+          const li = document.createElement("li");
+          li.textContent = sym ? sym.label : id;
+          ul.appendChild(li);
+        });
+      }
+
+      function showUnknown() {
+        document.getElementById("resultEmpty").classList.add("d-none");
+        document.getElementById("resultBox").classList.add("d-none");
+        document.getElementById("resultUnknown").classList.remove("d-none");
+      }
+
+      document.getElementById("btnDiagnose").addEventListener("click", () => {
+        const selected = getSelectedSymptoms();
+        const matches = findMatches(selected);
+
+        if (matches.length === 0) {
+          showUnknown();
+        } else {
+          showDetected(matches[0]);
+        }
+      });
+
+      document.getElementById("btnReset").addEventListener("click", () => {
+        SYMPTOMS.forEach(
+          (s) => (document.getElementById(s.id).checked = false)
+        );
+        document.getElementById("resultBox").classList.add("d-none");
+        document.getElementById("resultUnknown").classList.add("d-none");
+        document.getElementById("resultEmpty").classList.remove("d-none");
+      });
+    </script>
+  </body>
+</html>
